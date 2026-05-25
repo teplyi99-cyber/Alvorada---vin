@@ -1,0 +1,29 @@
+Watchpack Error (initial scan): Error: EINVAL: invalid argument, lstat 'C:\System Volume Information'
+Watchpack Error (initial scan): Error: EINVAL: invalid argument, lstat 'C:\pagefile.sys'
+Watchpack Error (initial scan): Error: EINVAL: invalid argument, lstat 'C:\swapfile.sys'
+Watchpack Error (initial scan): Error: EINVAL: invalid argument, lstat 'C:\System Volume Information'
+Watchpack Error (initial scan): Error: EINVAL: invalid argument, lstat 'C:\pagefile.sys'
+Watchpack Error (initial scan): Error: EINVAL: invalid argument, lstat 'C:\swapfile.sys'
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, lstat 'C:\Users\FAMIGLIA\Downloads\Проект Альворадо\Alvorado Vin\.next\server\app\login\page.js'
+<w> [webpack.cache.PackFileCacheStrategy/webpack.FileSystemInfo] Resolving '../../../../.next/server/app/login/page' in C:\Users\FAMIGLIA\Downloads\Проект Альворадо\Alvorado Vin\node_modules\next\dist\server for build dependencies doesn't lead to expected result 'C:\Users\FAMIGLIA\Downloads\Проект Альворадо\Alvorado Vin\.next\server\app\login\page.js', but to 'Error: Can't resolve '../../../../.next/server/app/login/page' in 'C:\Users\FAMIGLIA\Downloads\Проект Альворадо\Alvorado Vin\node_modules\next\dist\server'' instead. Resolving dependencies are ignored for this path.
+<w>  at resolve commonjs file ../../../../.next/server/app/login/page (expected C:\Users\FAMIGLIA\Downloads\Проект Альворадо\Alvorado Vin\.next\server\app\login\page.js)
+<w>  at file dependencies C:\Users\FAMIGLIA\Downloads\Проект Альворадо\Alvorado Vin\node_modules\next\dist\server\require.js
+<w>  at file C:\Users\FAMIGLIA\Downloads\Проект Альворадо\Alvorado Vin\node_modules\next\dist\server\require.js
+<w>  at file dependencies C:\Users\FAMIGLIA\Downloads\Проект Альворадо\Alvorado Vin\node_modules\next\dist\server\load-components.js
+<w>  at file C:\Users\FAMIGLIA\Downloads\Проект Альворадо\Alvorado Vin\node_modules\next\dist\server\load-components.js
+<w>  at file dependencies C:\Users\FAMIGLIA\Downloads\Проект Альворадо\Alvorado Vin\node_modules\next\dist\build\utils.js
+<w>  at file C:\Users\FAMIGLIA\Downloads\Проект Альворадо\Alvorado Vin\node_modules\next\dist\build\utils.js
+<w>  at file dependencies C:\Users\FAMIGLIA\Downloads\Проект Альворадо\Alvorado Vin\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
+<w>  at file C:\Users\FAMIGLIA\Downloads\Проект Альворадо\Alvorado Vin\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
+<w>  at resolve commonjs C:\Users\FAMIGLIA\Downloads\Проект Альворадо\Alvorado Vin\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
+<w> [webpack.cache.PackFileCacheStrategy/webpack.FileSystemInfo] Resolving '../../../../.next/server/app/api/chat/route' in C:\Users\FAMIGLIA\Downloads\Проект Альворадо\Alvorado Vin\node_modules\next\dist\server for build dependencies doesn't lead to expected result 'C:\Users\FAMIGLIA\Downloads\Проект Альворадо\Alvorado Vin\.next\server\app\api\chat\route.js', but to 'Error: Can't resolve '../../../../.next/server/app/api/chat/route' in 'C:\Users\FAMIGLIA\Downloads\Проект Альворадо\Alvorado Vin\node_modules\next\dist\server'' instead. Resolving dependencies are ignored for this path.
+<w>  at resolve commonjs file ../../../../.next/server/app/api/chat/route (expected C:\Users\FAMIGLIA\Downloads\Проект Альворадо\Alvorado Vin\.next\server\app\api\chat\route.js)
+<w>  at file dependencies C:\Users\FAMIGLIA\Downloads\Проект Альворадо\Alvorado Vin\node_modules\next\dist\server\require.js
+<w>  at file C:\Users\FAMIGLIA\Downloads\Проект Альворадо\Alvorado Vin\node_modules\next\dist\server\require.js
+<w>  at file dependencies C:\Users\FAMIGLIA\Downloads\Проект Альворадо\Alvorado Vin\node_modules\next\dist\server\load-components.js
+<w>  at file C:\Users\FAMIGLIA\Downloads\Проект Альворадо\Alvorado Vin\node_modules\next\dist\server\load-components.js
+<w>  at file dependencies C:\Users\FAMIGLIA\Downloads\Проект Альворадо\Alvorado Vin\node_modules\next\dist\build\utils.js
+<w>  at file C:\Users\FAMIGLIA\Downloads\Проект Альворадо\Alvorado Vin\node_modules\next\dist\build\utils.js
+<w>  at file dependencies C:\Users\FAMIGLIA\Downloads\Проект Альворадо\Alvorado Vin\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
+<w>  at file C:\Users\FAMIGLIA\Downloads\Проект Альворадо\Alvorado Vin\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
+<w>  at resolve commonjs C:\Users\FAMIGLIA\Downloads\Проект Альворадо\Alvorado Vin\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js

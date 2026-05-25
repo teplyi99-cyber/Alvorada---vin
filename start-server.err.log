@@ -1,0 +1,21 @@
+(node:5036) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[next-auth][error][OAUTH_CALLBACK_ERROR] 
+https://next-auth.js.org/errors#oauth_callback_error outgoing request timed out after 3500ms {
+  error: i: outgoing request timed out after 3500ms
+      at C:\Users\FAMIGLIA\Downloads\Проект Альворадо\Alvorado Vin\.next\server\chunks\175.js:34:37489
+      at async _.discover (C:\Users\FAMIGLIA\Downloads\Проект Альворадо\Alvorado Vin\.next\server\chunks\175.js:34:42212)
+      at async o (C:\Users\FAMIGLIA\Downloads\Проект Альворадо\Alvorado Vin\.next\server\chunks\175.js:1:130846)
+      at async l (C:\Users\FAMIGLIA\Downloads\Проект Альворадо\Alvorado Vin\.next\server\chunks\175.js:1:125071)
+      at async Object.c (C:\Users\FAMIGLIA\Downloads\Проект Альворадо\Alvorado Vin\.next\server\chunks\175.js:25:781)
+      at async _ (C:\Users\FAMIGLIA\Downloads\Проект Альворадо\Alvorado Vin\.next\server\chunks\175.js:1:108007)
+      at async a (C:\Users\FAMIGLIA\Downloads\Проект Альворадо\Alvorado Vin\.next\server\chunks\175.js:25:18846)
+      at async e.length.t (C:\Users\FAMIGLIA\Downloads\Проект Альворадо\Alvorado Vin\.next\server\chunks\175.js:25:20336)
+      at async e5.do (C:\Users\FAMIGLIA\Downloads\Проект Альворадо\Alvorado Vin\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:18:18072)
+      at async e5.handle (C:\Users\FAMIGLIA\Downloads\Проект Альворадо\Alvorado Vin\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:18:21621) {
+    name: 'OAuthCallbackError',
+    code: undefined
+  },
+  providerId: 'google',
+  message: 'outgoing request timed out after 3500ms'
+}

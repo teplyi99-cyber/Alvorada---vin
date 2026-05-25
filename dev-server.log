@@ -1,0 +1,51 @@
+
+> alvorada-vin@0.1.0 dev
+> next dev
+
+  ▲ Next.js 15.0.0
+  - Local:        http://localhost:3000
+  - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 16.8s
+ ○ Compiling /middleware ...
+ ✓ Compiled /middleware in 1822ms (190 modules)
+ ○ Compiling /practice ...
+ ✓ Compiled /practice in 14.1s (645 modules)
+ GET /practice 200 in 15280ms
+ ✓ Compiled in 1593ms (314 modules)
+ POST /api/chat 200 in 18109ms
+ ○ Compiling /api/auth/[...nextauth] ...
+ ✓ Compiled /practice in 5.5s (849 modules)
+ GET /api/auth/session 200 in 6886ms
+ GET /practice 200 in 4435ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 3.6s (852 modules)
+ GET /_next/static/css/app/layout.css?v=1779377586144 404 in 4640ms
+ POST /api/auth/_log 200 in 4765ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 2932ms
+ GET /_next/static/chunks/app/practice/page.js 404 in 3564ms
+ GET /_next/static/chunks/app/layout.js 404 in 3576ms
+ GET /_next/static/chunks/main-app.js?v=1779377586144 404 in 3617ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 2.7s (858 modules)
+ GET /login 200 in 3420ms
+ GET /_next/static/css/app/layout.css?v=1779377603327 404 in 195ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 445ms
+ GET /_next/static/chunks/app/layout.js 404 in 445ms
+ GET /_next/static/chunks/main-app.js?v=1779377603327 404 in 467ms
+ GET /practice 200 in 272ms
+ GET /_next/static/css/app/layout.css?v=1779377628799 404 in 99ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 601ms
+ GET /_next/static/chunks/app/layout.js 404 in 601ms
+ GET /_next/static/chunks/main-app.js?v=1779377628799 404 in 631ms
+ GET /_next/static/chunks/app/practice/page.js 404 in 482ms
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 16s (853 modules)
+ GET /practice 404 in 16495ms
+ GET /practice 200 in 1505ms
+ GET /_next/static/css/app/layout.css?v=1779377984038 404 in 2417ms
+ GET /_next/static/chunks/main-app.js?v=1779377984038 404 in 985ms
+ GET /_next/static/chunks/app/layout.js 404 in 921ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 926ms
+ GET /_next/static/chunks/app/practice/page.js 404 in 921ms
