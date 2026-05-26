@@ -8,7 +8,7 @@ const MODULES = [
   { emoji: '🗣️', title: 'Практика', desc: 'AI-диалог с тьютором', href: '/practice', ready: true },
   { emoji: '✈️', title: 'Сценарии', desc: 'Аэропорт, отель, ресторан', href: '/scenarios', ready: true },
   { emoji: '📚', title: 'Словарь', desc: 'Интервальные повторения', href: '/vocabulary', ready: true },
-  { emoji: '🎧', title: 'Аудио', desc: 'Диалоги с транскриптом', href: '/listening', ready: false },
+  { emoji: '🎧', title: 'Аудио', desc: 'Диалоги с транскриптом', href: '/listening', ready: true },
   { emoji: '📊', title: 'Прогресс', desc: 'Статистика и достижения', href: '/progress', ready: true },
   { emoji: '⚙️', title: 'Настройки', desc: 'Уровень и цели', href: '/settings', ready: true },
 ]

@@ -13,6 +13,7 @@ export async function middleware(req: NextRequest) {
     '/onboarding',
     '/practice',
     '/vocabulary',
+    '/listening',
     '/api/auth',
     '/api/health',
     '/api/chat',
