@@ -8,7 +8,15 @@ export async function middleware(req: NextRequest) {
   })
   const { pathname } = req.nextUrl
 
-  const publicPaths = ['/login', '/onboarding', '/practice', '/api/auth', '/api/health', '/api/chat']
+  const publicPaths = [
+    '/login',
+    '/onboarding',
+    '/practice',
+    '/vocabulary',
+    '/api/auth',
+    '/api/health',
+    '/api/chat',
+  ]
   const isPublic = publicPaths.some((p) => pathname.startsWith(p))
 
   if (!token && !isPublic) {
