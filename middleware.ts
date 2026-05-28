@@ -14,9 +14,11 @@ export async function middleware(req: NextRequest) {
     '/practice',
     '/vocabulary',
     '/listening',
+    '/writing',
     '/api/auth',
     '/api/health',
     '/api/chat',
+    '/api/writing',
   ]
   const isPublic = publicPaths.some((p) => pathname.startsWith(p))
 

@@ -9,6 +9,7 @@ const MODULES = [
   { emoji: '✈️', title: 'Сценарии', desc: 'Аэропорт, отель, ресторан', href: '/scenarios', ready: true },
   { emoji: '📚', title: 'Словарь', desc: 'Интервальные повторения', href: '/vocabulary', ready: true },
   { emoji: '🎧', title: 'Аудио', desc: 'Диалоги с транскриптом', href: '/listening', ready: true },
+  { emoji: '✍️', title: 'Письмо', desc: 'Редактор и AI-проверка', href: '/writing', ready: true },
   { emoji: '📊', title: 'Прогресс', desc: 'Статистика и достижения', href: '/progress', ready: true },
   { emoji: '⚙️', title: 'Настройки', desc: 'Уровень и цели', href: '/settings', ready: true },
 ]
