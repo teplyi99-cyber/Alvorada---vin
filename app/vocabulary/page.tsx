@@ -6,10 +6,34 @@ import { WORDS, TOPICS, getOptions, type Word } from './data'
 
 type Screen = 'topics' | 'quiz' | 'result'
 type TopicId = 'airport' | 'hotel' | 'restaurant'
+type TopicPack = {
+  id: string
+  title: string
+  description: string
+  words: Word[]
+}
+
+const PACK_SIZE = 10
+
+function getTopicPacks(topicId: TopicId): TopicPack[] {
+  const topicWords = WORDS.filter((word) => word.topic === topicId)
+
+  return Array.from({ length: Math.ceil(topicWords.length / PACK_SIZE) }, (_, index) => {
+    const start = index * PACK_SIZE
+    const words = topicWords.slice(start, start + PACK_SIZE)
+
+    return {
+      id: `${topicId}-${index + 1}`,
+      title: `Пакет ${index + 1}`,
+      description: `Слова ${start + 1}-${start + words.length}`,
+      words,
+    }
+  })
+}
 
 // ─── Topic picker ─────────────────────────────────────────────────────────────
 
-function TopicPicker({ onSelect }: { onSelect: (t: TopicId | 'all') => void }) {
+function TopicPicker({ onSelect }: { onSelect: (topic: TopicId) => void }) {
   const router = useRouter()
   const topicList = Object.entries(TOPICS) as [TopicId, { label: string; emoji: string }][]
 
@@ -25,21 +49,9 @@ function TopicPicker({ onSelect }: { onSelect: (t: TopicId | 'all') => void }) {
       <main className="max-w-lg mx-auto px-4 py-6 space-y-3">
         <p className="text-sm text-gray-500 pb-1">Выбери тему для повторения:</p>
 
-        {/* Все слова */}
-        <button
-          onClick={() => onSelect('all')}
-          className="w-full text-left bg-white rounded-2xl border border-gray-200 hover:border-sky-400 hover:shadow-sm transition-all px-5 py-4 flex items-center gap-4"
-        >
-          <span className="text-3xl">📚</span>
-          <div className="flex-1">
-            <div className="font-semibold text-gray-900">Все темы</div>
-            <div className="text-sm text-gray-500">{WORDS.length} слов</div>
-          </div>
-          <span className="text-gray-400">→</span>
-        </button>
-
         {topicList.map(([id, topic]) => {
           const count = WORDS.filter((w) => w.topic === id).length
+          const packCount = getTopicPacks(id).length
           return (
             <button
               key={id}
@@ -49,12 +61,60 @@ function TopicPicker({ onSelect }: { onSelect: (t: TopicId | 'all') => void }) {
               <span className="text-3xl">{topic.emoji}</span>
               <div className="flex-1">
                 <div className="font-semibold text-gray-900">{topic.label}</div>
-                <div className="text-sm text-gray-500">{count} слов</div>
+                <div className="text-sm text-gray-500">{packCount} пакета по 10 слов · всего {count}</div>
               </div>
               <span className="text-gray-400">→</span>
             </button>
           )
         })}
+      </main>
+    </div>
+  )
+}
+
+// ─── Pack picker ──────────────────────────────────────────────────────────────
+
+function PackPicker({
+  topic,
+  onSelect,
+  onBack,
+}: {
+  topic: TopicId
+  onSelect: (pack: TopicPack) => void
+  onBack: () => void
+}) {
+  const topicMeta = TOPICS[topic]
+  const packs = getTopicPacks(topic)
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white border-b border-gray-100 px-4 h-14 flex items-center gap-3">
+        <button onClick={onBack} className="text-gray-400 hover:text-gray-700">
+          ← Назад
+        </button>
+        <div className="flex items-center gap-2">
+          <span className="text-xl">{topicMeta.emoji}</span>
+          <div className="font-semibold text-gray-900">{topicMeta.label}</div>
+        </div>
+      </header>
+
+      <main className="max-w-lg mx-auto px-4 py-6 space-y-3">
+        <p className="text-sm text-gray-500 pb-1">Выбери короткий пакет из 10 слов:</p>
+
+        {packs.map((pack) => (
+          <button
+            key={pack.id}
+            onClick={() => onSelect(pack)}
+            className="w-full text-left bg-white rounded-2xl border border-gray-200 hover:border-sky-400 hover:shadow-sm transition-all px-5 py-4 flex items-center gap-4"
+          >
+            <span className="text-2xl">📦</span>
+            <div className="flex-1">
+              <div className="font-semibold text-gray-900">{pack.title}</div>
+              <div className="text-sm text-gray-500">{pack.description} · {pack.words.length} слов</div>
+            </div>
+            <span className="text-gray-400">→</span>
+          </button>
+        ))}
       </main>
     </div>
   )
@@ -207,7 +267,7 @@ function ResultScreen({
             onClick={onBack}
             className="w-full bg-white border border-gray-200 text-gray-700 font-semibold py-4 rounded-xl hover:border-gray-300 transition-colors"
           >
-            Выбрать другую тему
+            Выбрать другой пакет
           </button>
           <button
             onClick={() => router.push('/practice')}
@@ -225,22 +285,20 @@ function ResultScreen({
 
 export default function VocabularyPage() {
   const [screen, setScreen] = useState<Screen>('topics')
-  const [topic, setTopic] = useState<TopicId | 'all' | null>(null)
+  const [topic, setTopic] = useState<TopicId | null>(null)
+  const [pack, setPack] = useState<TopicPack | null>(null)
   const [result, setResult] = useState<{ correct: number; total: number } | null>(null)
-
-  const getWords = (): Word[] => {
-    if (!topic || topic === 'all') return [...WORDS].sort(() => Math.random() - 0.5)
-    return WORDS.filter((w) => w.topic === topic).sort(() => Math.random() - 0.5)
-  }
-
   const [quizWords, setQuizWords] = useState<Word[]>([])
 
-  const startQuiz = (t: TopicId | 'all') => {
+  const selectTopic = (t: TopicId) => {
     setTopic(t)
-    const words = t === 'all'
-      ? [...WORDS].sort(() => Math.random() - 0.5)
-      : WORDS.filter((w) => w.topic === t).sort(() => Math.random() - 0.5)
-    setQuizWords(words)
+    setPack(null)
+    setResult(null)
+  }
+
+  const startQuiz = (selectedPack: TopicPack) => {
+    setPack(selectedPack)
+    setQuizWords([...selectedPack.words].sort(() => Math.random() - 0.5))
     setScreen('quiz')
   }
 
@@ -250,14 +308,25 @@ export default function VocabularyPage() {
   }
 
   const handleRetry = () => {
-    const words = topic === 'all'
-      ? [...WORDS].sort(() => Math.random() - 0.5)
-      : WORDS.filter((w) => w.topic === topic).sort(() => Math.random() - 0.5)
-    setQuizWords(words)
+    if (!pack) return
+    setQuizWords([...pack.words].sort(() => Math.random() - 0.5))
     setScreen('quiz')
   }
 
-  if (screen === 'topics') return <TopicPicker onSelect={startQuiz} />
+  if (screen === 'topics' && !topic) return <TopicPicker onSelect={selectTopic} />
+
+  if (screen === 'topics' && topic) {
+    return (
+      <PackPicker
+        topic={topic}
+        onSelect={startQuiz}
+        onBack={() => {
+          setTopic(null)
+          setPack(null)
+        }}
+      />
+    )
+  }
 
   if (screen === 'quiz') return (
     <QuizScreen
