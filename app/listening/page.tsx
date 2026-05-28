@@ -67,6 +67,7 @@ function ListeningScreen({ dialog, onBack }: { dialog: ListeningDialog; onBack: 
   const [answers, setAnswers] = useState<AnswerMap>({})
   const [showTranscript, setShowTranscript] = useState(false)
   const [summary, setSummary] = useState('')
+  const [completed, setCompleted] = useState(false)
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null)
 
   const ttsSupported = typeof window !== 'undefined' && 'speechSynthesis' in window
@@ -154,9 +155,60 @@ function ListeningScreen({ dialog, onBack }: { dialog: ListeningDialog; onBack: 
     setAnswers({})
     setShowTranscript(false)
     setSummary('')
+    setCompleted(false)
   }
 
   const allPartsAnswered = dialog.parts.every((_, index) => answers[index])
+
+  if (completed) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <header className="bg-white border-b border-gray-100 px-4 h-14 flex items-center gap-3">
+          <button onClick={onBack} className="text-gray-400 hover:text-gray-700">
+            ← Назад
+          </button>
+          <div className="flex items-center gap-2">
+            <span className="text-xl">{dialog.emoji}</span>
+            <div className="font-semibold text-gray-900 text-sm">Итог аудирования</div>
+          </div>
+        </header>
+
+        <main className="max-w-lg mx-auto px-4 py-6 space-y-5">
+          <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 text-center space-y-3">
+            <div className="text-5xl">✅</div>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">Упражнение завершено</h1>
+              <p className="text-sm text-gray-500 mt-1">
+                Правильных ответов: {correctAnswers} из {dialog.parts.length}
+              </p>
+            </div>
+          </section>
+
+          {summary.trim() && (
+            <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-2">
+              <div className="text-sm font-semibold text-gray-900">Твой пересказ</div>
+              <div className="text-sm text-gray-700 leading-relaxed">{summary}</div>
+            </section>
+          )}
+
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={resetDialog}
+              className="bg-white border border-gray-200 text-gray-700 font-semibold py-3 rounded-xl hover:border-gray-300 transition-colors text-sm"
+            >
+              Повторить
+            </button>
+            <button
+              onClick={onBack}
+              className="bg-sky-500 hover:bg-sky-600 text-white font-semibold py-3 rounded-xl transition-colors text-sm"
+            >
+              Другой диалог
+            </button>
+          </div>
+        </main>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -363,8 +415,13 @@ function ListeningScreen({ dialog, onBack }: { dialog: ListeningDialog; onBack: 
             className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-sky-400 resize-none"
           />
           <div className="bg-gray-50 rounded-xl border border-gray-100 px-4 py-3 text-sm text-gray-600">
-            Результат: {correctAnswers} из {dialog.parts.length} вопросов. AI здесь не используется, поэтому тренировка бесплатная.
+            Результат: {correctAnswers} из {dialog.parts.length} вопросов. Ответь на вопросы во всех частях, затем заверши упражнение.
           </div>
+          {!allPartsAnswered && (
+            <div className="text-xs text-amber-600">
+              Осталось ответить на вопросы: {dialog.parts.length - Object.keys(answers).length}
+            </div>
+          )}
           <div className="flex gap-3">
             <button
               onClick={resetDialog}
@@ -373,10 +430,14 @@ function ListeningScreen({ dialog, onBack }: { dialog: ListeningDialog; onBack: 
               Сбросить
             </button>
             <button
+              onClick={() => {
+                stop()
+                setCompleted(true)
+              }}
               disabled={!allPartsAnswered}
               className="flex-1 bg-sky-500 disabled:bg-gray-300 text-white font-semibold py-3 rounded-xl transition-colors text-sm"
             >
-              Завершено
+              Завершить упражнение
             </button>
           </div>
         </section>
