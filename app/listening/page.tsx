@@ -1,12 +1,29 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { LISTENING_DIALOGS, type ListeningDialog } from './data'
 
-// ─── Topic picker ─────────────────────────────────────────────────────────────
+type AnswerMap = Record<number, string>
 
-function DialogPicker({ onSelect }: { onSelect: (d: ListeningDialog) => void }) {
+function normalize(value: string) {
+  return value.trim().toLowerCase()
+}
+
+function getPreferredEnglishVoice(voices: SpeechSynthesisVoice[]) {
+  const englishVoices = voices.filter((voice) => voice.lang.toLowerCase().startsWith('en'))
+  const preferredNames = ['google uk english', 'google us english', 'microsoft zira', 'microsoft david', 'microsoft mark']
+
+  return (
+    englishVoices.find((voice) => preferredNames.some((name) => voice.name.toLowerCase().includes(name))) ??
+    englishVoices.find((voice) => voice.lang.toLowerCase() === 'en-gb') ??
+    englishVoices.find((voice) => voice.lang.toLowerCase() === 'en-us') ??
+    englishVoices[0] ??
+    null
+  )
+}
+
+function DialogPicker({ onSelect }: { onSelect: (dialog: ListeningDialog) => void }) {
   const router = useRouter()
 
   return (
@@ -30,7 +47,7 @@ function DialogPicker({ onSelect }: { onSelect: (d: ListeningDialog) => void }) 
             <span className="text-3xl">{dialog.emoji}</span>
             <div className="flex-1">
               <div className="font-semibold text-gray-900">{dialog.titleRu}</div>
-              <div className="text-sm text-gray-500">{dialog.lines.length} реплик</div>
+              <div className="text-sm text-gray-500">{dialog.parts.length} части · {dialog.lines.length} реплик</div>
             </div>
             <span className="text-gray-400">→</span>
           </button>
@@ -40,111 +57,117 @@ function DialogPicker({ onSelect }: { onSelect: (d: ListeningDialog) => void }) 
   )
 }
 
-// ─── Player + Task ────────────────────────────────────────────────────────────
-
-function ListeningScreen({
-  dialog,
-  onBack,
-}: {
-  dialog: ListeningDialog
-  onBack: () => void
-}) {
+function ListeningScreen({ dialog, onBack }: { dialog: ListeningDialog; onBack: () => void }) {
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([])
+  const [selectedVoiceName, setSelectedVoiceName] = useState('')
+  const [rate, setRate] = useState(0.9)
   const [playing, setPlaying] = useState(false)
   const [currentLine, setCurrentLine] = useState(-1)
+  const [currentPart, setCurrentPart] = useState(0)
+  const [answers, setAnswers] = useState<AnswerMap>({})
   const [showTranscript, setShowTranscript] = useState(false)
-  const [answer, setAnswer] = useState('')
-  const [feedback, setFeedback] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [phase, setPhase] = useState<'listen' | 'task' | 'result'>('listen')
+  const [summary, setSummary] = useState('')
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null)
 
-  // Проверяем поддержку TTS
   const ttsSupported = typeof window !== 'undefined' && 'speechSynthesis' in window
 
-  const speak = () => {
+  useEffect(() => {
     if (!ttsSupported) return
+
+    const loadVoices = () => {
+      const availableVoices = window.speechSynthesis.getVoices()
+      setVoices(availableVoices)
+
+      const preferred = getPreferredEnglishVoice(availableVoices)
+      if (preferred) setSelectedVoiceName((current) => current || preferred.name)
+    }
+
+    loadVoices()
+    window.speechSynthesis.onvoiceschanged = loadVoices
+
+    return () => {
+      window.speechSynthesis.onvoiceschanged = null
+      window.speechSynthesis.cancel()
+    }
+  }, [ttsSupported])
+
+  const englishVoices = useMemo(
+    () => voices.filter((voice) => voice.lang.toLowerCase().startsWith('en')),
+    [voices],
+  )
+
+  const selectedVoice = useMemo(
+    () => voices.find((voice) => voice.name === selectedVoiceName) ?? getPreferredEnglishVoice(voices),
+    [selectedVoiceName, voices],
+  )
+
+  const part = dialog.parts[currentPart]
+  const correctAnswers = Object.entries(answers).filter(([index, answer]) => {
+    const question = dialog.parts[Number(index)]?.question
+    return question && normalize(answer) === normalize(question.answer)
+  }).length
+
+  const stop = () => {
+    if (ttsSupported) window.speechSynthesis.cancel()
+    setPlaying(false)
+    setCurrentLine(-1)
+  }
+
+  const speakLineIndexes = (lineIndexes: number[]) => {
+    if (!ttsSupported || !selectedVoice) return
+
     window.speechSynthesis.cancel()
     setPlaying(true)
-    setCurrentLine(0)
 
-    const speakLine = (index: number) => {
-      if (index >= dialog.lines.length) {
+    const speakNext = (position: number) => {
+      const lineIndex = lineIndexes[position]
+
+      if (lineIndex === undefined) {
         setPlaying(false)
         setCurrentLine(-1)
         return
       }
 
-      const line = dialog.lines[index]
-      const utterance = new SpeechSynthesisUtterance(
-        `${line.speaker} says: ${line.text}`
-      )
-      utterance.lang = 'en-GB'
-      utterance.rate = 0.85
-      utterance.pitch = line.speaker === 'Agent' || line.speaker === 'Receptionist' || line.speaker === 'Waiter'
-        ? 1.1 : 0.9
-
-      utterance.onstart = () => setCurrentLine(index)
-      utterance.onend = () => speakLine(index + 1)
+      const line = dialog.lines[lineIndex]
+      const utterance = new SpeechSynthesisUtterance(`${line.speaker} says: ${line.audioText ?? line.text}`)
+      utterance.voice = selectedVoice
+      utterance.lang = selectedVoice.lang
+      utterance.rate = rate
+      utterance.pitch = line.speaker === 'Agent' || line.speaker === 'Receptionist' || line.speaker === 'Waiter' ? 1.05 : 0.95
+      utterance.onstart = () => setCurrentLine(lineIndex)
+      utterance.onend = () => speakNext(position + 1)
 
       utteranceRef.current = utterance
       window.speechSynthesis.speak(utterance)
     }
 
-    speakLine(0)
+    speakNext(0)
   }
 
-  const stop = () => {
-    window.speechSynthesis.cancel()
-    setPlaying(false)
-    setCurrentLine(-1)
+  const chooseAnswer = (answer: string) => {
+    setAnswers((current) => ({ ...current, [currentPart]: answer }))
   }
 
-  const handleSubmit = async () => {
-    if (!answer.trim()) return
-    setLoading(true)
-
-    try {
-      const transcript = dialog.lines
-        .map((l) => `${l.speaker}: ${l.text}`)
-        .join('\n')
-
-      const prompt = `You are an English teacher. A student listened to this dialogue:
-
-${transcript}
-
-The task was: "${dialog.task}"
-
-The student wrote this response: "${answer}"
-
-Evaluate if the student understood the main points of the dialogue.
-Respond in Russian only. Be encouraging. Max 3 sentences.
-Start with ✓ if they understood well, or with → if they missed something important.`
-
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          scenario: dialog.topic,
-          history: [],
-          userMessage: prompt,
-        }),
-      })
-
-      const data = await res.json()
-      setFeedback(data.reply || 'Хорошая попытка!')
-      setPhase('result')
-    } catch {
-      setFeedback('Не удалось получить оценку. Попробуй ещё раз.')
-      setPhase('result')
-    } finally {
-      setLoading(false)
-    }
+  const resetDialog = () => {
+    stop()
+    setCurrentPart(0)
+    setAnswers({})
+    setShowTranscript(false)
+    setSummary('')
   }
+
+  const allPartsAnswered = dialog.parts.every((_, index) => answers[index])
 
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-100 px-4 h-14 flex items-center gap-3">
-        <button onClick={onBack} className="text-gray-400 hover:text-gray-700">
+        <button
+          onClick={() => {
+            stop()
+            onBack()
+          }}
+          className="text-gray-400 hover:text-gray-700"
+        >
           ← Назад
         </button>
         <div className="flex items-center gap-2">
@@ -154,160 +177,213 @@ Start with ✓ if they understood well, or with → if they missed something imp
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-6 space-y-5">
-
-        {/* Плеер */}
-        {phase === 'listen' && (
-          <>
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 text-center space-y-4">
-              <div className="text-5xl">{playing ? '🔊' : '🎧'}</div>
-              <div>
-                <div className="font-semibold text-gray-900">{dialog.title}</div>
-                <div className="text-sm text-gray-500 mt-1">{dialog.lines.length} реплик · English</div>
+        <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-xs uppercase tracking-wide text-gray-400">Voice</div>
+              <div className="font-semibold text-gray-900 text-sm">
+                {selectedVoice ? `${selectedVoice.name} (${selectedVoice.lang})` : 'English voice not found'}
               </div>
-
-              {!ttsSupported && (
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-700">
-                  ⚠️ Аудио работает только в Chrome/Edge
-                </div>
-              )}
-
-              {ttsSupported && (
-                <div className="flex gap-3 justify-center">
-                  {!playing ? (
-                    <button
-                      onClick={speak}
-                      className="bg-sky-500 hover:bg-sky-600 text-white font-semibold px-6 py-3 rounded-xl transition-colors flex items-center gap-2"
-                    >
-                      ▶ Слушать
-                    </button>
-                  ) : (
-                    <button
-                      onClick={stop}
-                      className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-6 py-3 rounded-xl transition-colors flex items-center gap-2"
-                    >
-                      ⏹ Стоп
-                    </button>
-                  )}
-                </div>
-              )}
             </div>
-
-            {/* Текущая реплика */}
-            {playing && currentLine >= 0 && (
-              <div className="bg-sky-50 border border-sky-200 rounded-xl px-4 py-3 text-sm">
-                <span className="text-sky-600 font-medium">{dialog.lines[currentLine]?.speaker}: </span>
-                <span className="text-gray-700">{dialog.lines[currentLine]?.text}</span>
-              </div>
-            )}
-
-            {/* Транскрипт */}
             <button
-              onClick={() => setShowTranscript(!showTranscript)}
-              className="text-sm text-sky-500 hover:underline w-full text-center"
+              onClick={() => speakLineIndexes([part.lineIndexes[0]])}
+              disabled={!selectedVoice || playing}
+              className="text-xs bg-sky-100 text-sky-600 disabled:text-gray-400 disabled:bg-gray-100 px-3 py-2 rounded-lg font-medium"
             >
-              {showTranscript ? 'Скрыть транскрипт' : 'Показать транскрипт'}
+              Тест голоса
             </button>
+          </div>
 
-            {showTranscript && (
-              <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-2">
-                {dialog.lines.map((line, i) => (
-                  <div key={i} className={`text-sm ${i === currentLine ? 'text-sky-600 font-medium' : 'text-gray-700'}`}>
-                    <span className="text-gray-400">{line.speaker}: </span>
-                    {line.text}
-                  </div>
-                ))}
-              </div>
+          {!selectedVoice && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-700">
+              Для качественного аудио нужен английский голос в Chrome/Edge или в системе.
+            </div>
+          )}
+
+          {englishVoices.length > 0 && (
+            <select
+              value={selectedVoiceName}
+              onChange={(event) => setSelectedVoiceName(event.target.value)}
+              className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:border-sky-400"
+            >
+              {englishVoices.map((voice) => (
+                <option key={voice.name} value={voice.name}>
+                  {voice.name} ({voice.lang})
+                </option>
+              ))}
+            </select>
+          )}
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500">Скорость</span>
+            {[0.75, 0.9, 1].map((value) => (
+              <button
+                key={value}
+                onClick={() => setRate(value)}
+                className={[
+                  'px-3 py-1.5 rounded-lg text-xs font-medium border',
+                  rate === value ? 'bg-sky-500 text-white border-sky-500' : 'bg-white text-gray-600 border-gray-200',
+                ].join(' ')}
+              >
+                {value}x
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-xs text-gray-400">Часть {currentPart + 1} из {dialog.parts.length}</div>
+              <div className="font-semibold text-gray-900">{part.title}</div>
+            </div>
+            <div className="text-3xl">{playing ? '🔊' : '🎧'}</div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            {!playing ? (
+              <button
+                onClick={() => speakLineIndexes(part.lineIndexes)}
+                disabled={!selectedVoice}
+                className="bg-sky-500 hover:bg-sky-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-semibold py-3 rounded-xl transition-colors text-sm"
+              >
+                Слушать часть
+              </button>
+            ) : (
+              <button
+                onClick={stop}
+                className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-3 rounded-xl transition-colors text-sm"
+              >
+                Стоп
+              </button>
             )}
-
-            {/* Кнопка перейти к заданию */}
             <button
-              onClick={() => setPhase('task')}
-              className="w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold py-4 rounded-xl transition-colors"
+              onClick={() => speakLineIndexes(dialog.lines.map((_, index) => index))}
+              disabled={!selectedVoice || playing}
+              className="bg-white border border-gray-200 text-gray-700 disabled:text-gray-400 font-semibold py-3 rounded-xl hover:border-gray-300 transition-colors text-sm"
             >
-              Перейти к заданию →
+              Весь диалог
             </button>
-          </>
+          </div>
+
+          {currentLine >= 0 && (
+            <div className="bg-sky-50 border border-sky-200 rounded-xl px-4 py-3 text-sm">
+              <span className="text-sky-600 font-medium">{dialog.lines[currentLine]?.speaker}: </span>
+              <span className="text-gray-700">{dialog.lines[currentLine]?.text}</span>
+            </div>
+          )}
+        </section>
+
+        <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
+          <div className="font-semibold text-gray-900 text-sm">{part.question.question}</div>
+          <div className="space-y-2">
+            {part.question.options.map((option) => {
+              const selected = answers[currentPart] === option
+              const answered = Boolean(answers[currentPart])
+              const correct = option === part.question.answer
+
+              return (
+                <button
+                  key={option}
+                  onClick={() => chooseAnswer(option)}
+                  className={[
+                    'w-full text-left rounded-xl border px-4 py-3 text-sm transition-colors',
+                    selected && correct ? 'bg-emerald-50 border-emerald-300 text-emerald-700' :
+                    selected && !correct ? 'bg-red-50 border-red-300 text-red-700' :
+                    answered && correct ? 'bg-emerald-50 border-emerald-200 text-emerald-700' :
+                    'bg-white border-gray-200 text-gray-700 hover:border-sky-300',
+                  ].join(' ')}
+                >
+                  {option}
+                </button>
+              )
+            })}
+          </div>
+
+          {answers[currentPart] && (
+            <div className="text-sm text-gray-500">
+              {normalize(answers[currentPart]) === normalize(part.question.answer)
+                ? 'Верно. Можно идти дальше.'
+                : `Правильный ответ: ${part.question.answer}`}
+            </div>
+          )}
+        </section>
+
+        <div className="flex gap-3">
+          <button
+            onClick={() => {
+              stop()
+              setCurrentPart((value) => Math.max(0, value - 1))
+            }}
+            disabled={currentPart === 0}
+            className="flex-1 bg-white border border-gray-200 text-gray-700 disabled:text-gray-300 font-semibold py-3 rounded-xl hover:border-gray-300 transition-colors text-sm"
+          >
+            ← Назад
+          </button>
+          <button
+            onClick={() => {
+              stop()
+              setCurrentPart((value) => Math.min(dialog.parts.length - 1, value + 1))
+            }}
+            disabled={currentPart === dialog.parts.length - 1}
+            className="flex-1 bg-white border border-gray-200 text-gray-700 disabled:text-gray-300 font-semibold py-3 rounded-xl hover:border-gray-300 transition-colors text-sm"
+          >
+            Дальше →
+          </button>
+        </div>
+
+        <button
+          onClick={() => setShowTranscript(!showTranscript)}
+          className="text-sm text-sky-500 hover:underline w-full text-center"
+        >
+          {showTranscript ? 'Скрыть транскрипт' : 'Показать транскрипт'}
+        </button>
+
+        {showTranscript && (
+          <section className="bg-white rounded-2xl border border-gray-100 p-4 space-y-2">
+            {dialog.lines.map((line, index) => (
+              <div key={index} className={`text-sm ${index === currentLine ? 'text-sky-600 font-medium' : 'text-gray-700'}`}>
+                <span className="text-gray-400">{line.speaker}: </span>
+                {line.text}
+              </div>
+            ))}
+          </section>
         )}
 
-        {/* Задание */}
-        {phase === 'task' && (
-          <>
-            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
-              <div className="text-sm font-medium text-amber-800 mb-1">📝 Задание:</div>
-              <div className="text-sm text-amber-700">{dialog.task}</div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm text-gray-600 font-medium">
-                Твой ответ на английском:
-              </label>
-              <textarea
-                value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
-                placeholder="Write what you understood from the dialogue..."
-                rows={4}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-sky-400 resize-none"
-              />
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setPhase('listen')}
-                className="flex-1 bg-white border border-gray-200 text-gray-700 font-semibold py-3 rounded-xl hover:border-gray-300 transition-colors text-sm"
-              >
-                ← Слушать ещё раз
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={!answer.trim() || loading}
-                className="flex-1 bg-sky-500 hover:bg-sky-600 disabled:bg-gray-300 text-white font-semibold py-3 rounded-xl transition-colors text-sm"
-              >
-                {loading ? 'Проверяем...' : 'Проверить →'}
-              </button>
-            </div>
-          </>
-        )}
-
-        {/* Результат */}
-        {phase === 'result' && feedback && (
-          <>
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
-              <div className="font-semibold text-gray-900">Оценка:</div>
-              <div className="text-gray-700 leading-relaxed">{feedback}</div>
-            </div>
-
-            <div className="bg-gray-50 rounded-2xl border border-gray-100 p-4">
-              <div className="text-sm font-medium text-gray-500 mb-2">Твой ответ:</div>
-              <div className="text-sm text-gray-700">{answer}</div>
-            </div>
-
-            <div className="space-y-3">
-              <button
-                onClick={() => {
-                  setPhase('listen')
-                  setAnswer('')
-                  setFeedback(null)
-                  stop()
-                }}
-                className="w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold py-4 rounded-xl transition-colors"
-              >
-                Попробовать ещё раз
-              </button>
-              <button
-                onClick={onBack}
-                className="w-full bg-white border border-gray-200 text-gray-700 font-semibold py-3 rounded-xl hover:border-gray-300 transition-colors"
-              >
-                Выбрать другой диалог
-              </button>
-            </div>
-          </>
-        )}
+        <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
+          <div>
+            <div className="font-semibold text-gray-900">Финальный пересказ</div>
+            <div className="text-xs text-gray-500 mt-1">{dialog.task}</div>
+          </div>
+          <textarea
+            value={summary}
+            onChange={(event) => setSummary(event.target.value)}
+            placeholder="Напиши по-русски, что понял из диалога..."
+            rows={4}
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-sky-400 resize-none"
+          />
+          <div className="bg-gray-50 rounded-xl border border-gray-100 px-4 py-3 text-sm text-gray-600">
+            Результат: {correctAnswers} из {dialog.parts.length} вопросов. AI здесь не используется, поэтому тренировка бесплатная.
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={resetDialog}
+              className="flex-1 bg-white border border-gray-200 text-gray-700 font-semibold py-3 rounded-xl hover:border-gray-300 transition-colors text-sm"
+            >
+              Сбросить
+            </button>
+            <button
+              disabled={!allPartsAnswered}
+              className="flex-1 bg-sky-500 disabled:bg-gray-300 text-white font-semibold py-3 rounded-xl transition-colors text-sm"
+            >
+              Завершено
+            </button>
+          </div>
+        </section>
       </main>
     </div>
   )
 }
-
-// ─── Page entry point ─────────────────────────────────────────────────────────
 
 export default function ListeningPage() {
   const [dialog, setDialog] = useState<ListeningDialog | null>(null)
