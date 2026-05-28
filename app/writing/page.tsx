@@ -240,18 +240,18 @@ export default function WritingPage() {
 
             <div className="mt-4 space-y-3">
               <div className="bg-gray-50 rounded-xl p-4">
-                <div className="text-xs font-semibold text-gray-500 uppercase">Prompt</div>
+                <div className="text-xs font-semibold text-gray-500 uppercase">Что нужно написать</div>
                 <p className="text-gray-900 mt-1">{selectedTask.prompt}</p>
               </div>
 
               <div className="bg-gray-50 rounded-xl p-4">
-                <div className="text-xs font-semibold text-gray-500 uppercase">Context</div>
+                <div className="text-xs font-semibold text-gray-500 uppercase">Ситуация</div>
                 <p className="text-gray-700 mt-1">{selectedTask.context}</p>
               </div>
 
               {selectedTask.exampleAnswer && (
                 <div className="bg-sky-50 rounded-xl p-4">
-                  <div className="text-xs font-semibold text-sky-700 uppercase">Example</div>
+                  <div className="text-xs font-semibold text-sky-700 uppercase">Пример ответа</div>
                   <p className="text-sky-900 mt-1">{selectedTask.exampleAnswer}</p>
                 </div>
               )}
